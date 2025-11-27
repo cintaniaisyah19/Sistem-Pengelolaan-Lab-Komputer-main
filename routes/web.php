@@ -129,10 +129,18 @@ Route::get('/peminjaman/bukti/{id}', [PeminjamanController::class, 'bukti'])
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.user')->middleware('auth');
 
     // SOP & Profil
-    Route::get('/sop', [SopController::class, 'indexForUser'])->name('user.sop');
+    Route::get('/sop', [SopController::class, 'indexForUser'])->name('user.sop.index');
+        Route::get('/sop/create', [SopController::class, 'create'])->name('staf.sop.create'); // ← tambahkan ini
+    Route::post('/sop/store', [SopController::class, 'store'])->name('staf.sop.store');   // optional kalau pakai form store
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // ← Tambahkan edit & update
+    Route::get('/sop/{id}/edit', [SopController::class, 'edit'])->name('staf.sop.edit');
+    Route::put('/sop/{id}', [SopController::class, 'update'])->name('staf.sop.update');
+
+        // ← Tambahkan ini untuk delete
+    Route::delete('/sop/{id}', [SopController::class, 'destroy'])->name('staf.sop.destroy');
 
     // ================== PEMINJAMAN ALAT OLEH USER ==================
     Route::get('/peminjaman/alat', [UserPeminjamanController::class, 'index'])
