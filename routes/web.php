@@ -1,0 +1,196 @@
+<?php
+
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LaboratoriumController;
+use App\Http\Controllers\PeminjamanController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\StafController;
+use App\Http\Controllers\AlatController;
+use App\Http\Controllers\KadepController;
+use App\Http\Controllers\SopController;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserPeminjamanController;
+
+// ================== AUTH (LOGIN & REGISTER) ==================
+Route::middleware('guest')->group(function () {
+    // Halaman Utama (Welcome)
+    Route::get('/', fn() => view('welcome'))->name('welcome');
+
+    // Login
+    Route::get('/login', [AuthController::class, 'login'])->name('login');
+    Route::post('/login', [AuthController::class, 'authenticate'])->name('login.authenticate');
+
+    // Register
+    Route::get('/register', [AuthController::class, 'register'])->name('register.index');
+    Route::post('/register', [AuthController::class, 'create'])->name('register.create');
+});
+
+// ================== LOGOUT ==================
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
+
+// ================== GLOBAL DASHBOARD (Untuk kompatibilitas) ==================
+Route::middleware('auth')->get('/dashboard', function () {
+    $user = auth()->user();
+    switch ($user->level) {
+        case 'admin':
+            return redirect()->route('admin.dashboard');
+        case 'kadep':
+            return redirect()->route('kadep.dashboard');
+        case 'staf':
+            return redirect()->route('staf.dashboard');
+        default:
+            return redirect()->route('dashboard.user');
+    }
+})->name('dashboard');
+
+// ================== DASHBOARD CONTROLLER ==================
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard/admin', [DashboardController::class, 'index'])->name('dashboard.admin');
+    Route::get('/dashboard/staf', [DashboardController::class, 'stafDashboard'])->name('dashboard.staf');
+    Route::get('/dashboard/user', [UserController::class, 'index'])->name('dashboard.user');
+});
+
+// ================== ADMIN ROUTES ==================
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::resource('laboratorium', LaboratoriumController::class)
+        ->except(['show'])
+        ->names('admin.laboratorium');
+});
+
+// Peminjaman Lab & Alat
+// Peminjaman Lab & Alat
+// LAB
+Route::get('/peminjaman/lab', [PeminjamanController::class, 'labIndex'])->name('admin.peminjaman.lab.index');
+Route::get('/peminjaman/lab/create', [PeminjamanController::class, 'labCreate'])->name('admin.peminjaman.lab.create');
+Route::post('/peminjaman/lab/store', [PeminjamanController::class, 'labStore'])->name('admin.peminjaman.lab.store');
+Route::get('/peminjaman/lab/{id}/edit', [PeminjamanController::class, 'editLab'])->name('admin.peminjaman.lab.edit');
+Route::put('/peminjaman/lab/{id}', [PeminjamanController::class, 'updateLab'])->name('admin.peminjaman.lab.update');
+Route::delete('/peminjaman/lab/{id}', [PeminjamanController::class, 'destroyLab'])->name('admin.peminjaman.lab.destroy');
+
+// ALAT
+Route::get('/peminjaman/alat', [PeminjamanController::class, 'alatIndex'])->name('admin.peminjaman.alat.index');
+Route::get('/peminjaman/alat/create', [PeminjamanController::class, 'alatCreate'])->name('admin.peminjaman.alat.create');
+Route::post('/peminjaman/alat/store', [PeminjamanController::class, 'alatStore'])->name('admin.peminjaman.alat.store');
+Route::get('/peminjaman/alat/{id}/edit', [PeminjamanController::class, 'edit'])->name('admin.peminjaman.alat.edit'); // atau editAlat kalau kamu buat method khusus
+Route::put('/peminjaman/alat/{id}', [PeminjamanController::class, 'update'])->name('admin.peminjaman.alat.update'); // pastikan controller punya update() sesuai
+Route::delete('/peminjaman/alat/{id}', [PeminjamanController::class, 'destroy'])->name('admin.peminjaman.alat.destroy');
+
+// ================== KADEP ROUTES ==================
+Route::middleware(['auth', 'kadep'])->group(function () {
+    Route::get('/dashboard', [KadepController::class, 'dashboard'])->name('kadep.dashboard');
+
+    // Peminjaman untuk Kadep
+    Route::get('/kadep/peminjaman', [PeminjamanController::class, 'kadepIndex'])->name('kadep.peminjaman.index');
+
+    // Resource Alat
+    Route::resource('/kadep/alat', AlatController::class)->names([
+        'index' => 'kadep.alat.index',
+        'create' => 'kadep.alat.create',
+        'store' => 'kadep.alat.store',
+        'show' => 'kadep.alat.show',
+        'edit' => 'kadep.alat.edit',
+        'update' => 'kadep.alat.update',
+        'destroy' => 'kadep.alat.destroy',
+    ]);
+
+    // Lab untuk Kadep
+    Route::prefix('kadep/lab')->name('kadep.peminjaman.lab.')->group(function () {
+        Route::get('/', [PeminjamanController::class, 'labIndex'])->name('index');
+        Route::get('/create', [PeminjamanController::class, 'labCreate'])->name('create');
+        Route::post('/store', [PeminjamanController::class, 'labStore'])->name('store');
+        Route::get('/{id}/edit', [PeminjamanController::class, 'editLab'])->name('edit');
+        Route::put('/{id}', [PeminjamanController::class, 'updateLab'])->name('update');
+        Route::delete('/{id}', [PeminjamanController::class, 'destroyLab'])->name('destroy');
+    });
+
+    // Laporan Kerusakan
+    Route::get('/kadep/kerusakan', [KadepController::class, 'kerusakanIndex'])->name('kadep.kerusakan.index');
+    Route::post('/kadep/kerusakan/confirm/{id}', [KadepController::class, 'confirmReport'])->name('kadep.kerusakan.confirm');
+});
+
+// ================== USER ROUTES ==================
+Route::prefix('user')->middleware(['auth', 'user'])->group(function () {
+    Route::get('/', [UserController::class, 'index'])->name('dashboard.user');
+Route::get('/peminjaman/bukti/{id}', [PeminjamanController::class, 'bukti'])
+    ->name('user.peminjaman.bukti');
+
+
+    // Form Peminjaman
+    Route::get('/peminjaman/create/{lab_id}', [PeminjamanController::class, 'createForUser'])
+        ->name('peminjaman.create');
+    Route::post('/peminjaman/store-user', [PeminjamanController::class, 'storeUser'])
+        ->name('peminjaman.storeUser');
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.user')->middleware('auth');
+
+    // SOP & Profil
+    Route::get('/sop', [SopController::class, 'indexForUser'])->name('user.sop');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+
+    // ================== PEMINJAMAN ALAT OLEH USER ==================
+    Route::get('/peminjaman/alat', [UserPeminjamanController::class, 'index'])
+        ->name('user.peminjamanalat.index');
+
+    Route::get('/peminjaman/alat/create', [UserPeminjamanController::class, 'create'])
+        ->name('user.peminjamanalat.create');
+
+    Route::post('/peminjaman/alat/store', [UserPeminjamanController::class, 'store'])
+        ->name('user.peminjamanalat.store');
+});
+
+// ================== SOP (UMUM) ==================
+Route::get('/sop/download/{document}', [SopController::class, 'download'])
+    ->name('sop.download')
+    ->middleware('auth');
+
+
+// ================== PROFILE (UMUM) ==================
+Route::prefix('user')->middleware(['auth', 'user'])->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// ================== STAF ROUTES ==================
+Route::prefix('staf')->name('staf.')->middleware(['auth', 'staf'])->group(function () {
+
+    // Dashboard Staf
+    Route::get('/dashboard', [StafController::class, 'stafDashboard'])->name('dashboard');
+
+    // Validasi & Peminjaman
+    Route::get('/peminjaman', [StafController::class, 'validasi'])->name('peminjaman');
+    Route::post('/peminjaman/approve/{id}', [StafController::class, 'approve'])->name('peminjaman.approve');
+    Route::post('/peminjaman/reject/{id}', [StafController::class, 'reject'])->name('peminjaman.reject');
+
+    // Pengembalian
+    Route::get('/pengembalian', [StafController::class, 'pengembalian'])->name('pengembalian');
+    Route::post('/pengembalian/{id}', [StafController::class, 'konfirmasiPengembalian'])->name('pengembalian.konfirmasi');
+
+    // Kerusakan
+    Route::get('/kerusakan', [StafController::class, 'kerusakan'])->name('kerusakan');
+    Route::post('/kerusakan/input', [StafController::class, 'inputKerusakan'])->name('kerusakan.input');
+
+    // Laporan
+    Route::get('/laporan/peminjaman', [StafController::class, 'laporanPeminjaman'])->name('laporan.peminjaman');
+
+    // SOP Management
+ // SOP Management
+Route::get('/sop', [SopController::class, 'index'])->name('sop.index');
+
+    // ================= LABORATORIUM UNTUK STAF =================
+        Route::prefix('laboratorium')->name('laboratorium.')->group(function () {
+            Route::get('/',        [LaboratoriumController::class, 'index'])->name('index');
+            Route::get('/create',  [LaboratoriumController::class, 'create'])->name('create');
+            Route::post('/store',  [LaboratoriumController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [LaboratoriumController::class, 'edit'])->name('edit');
+            Route::put('/{id}',      [LaboratoriumController::class, 'update'])->name('update');
+            Route::delete('/{id}',   [LaboratoriumController::class, 'destroy'])->name('destroy');
+    });
+});
