@@ -107,11 +107,15 @@ class StafController extends Controller
         $peminjaman = Peminjaman::findOrFail($id);
         $peminjaman->status_peminjaman = 'ditolak';
         $peminjaman->save();
+
+          // Gunakan ternary untuk mencegah error jika alat null
+    $namaAlat = $peminjaman->alat ? $peminjaman->alat->nama_alat : 'alat tidak tersedia';
+
     
     // Simpan notifikasi ke database untuk user
     NotifikasiUser::create([
         'user_id' => $peminjaman->user_id,
-        'pesan'   => "Peminjaman Anda untuk {$peminjaman->alat->nama_alat} telah ditolak.",
+        'pesan'   => "Peminjaman Anda untuk {$namaAlat} telah ditolak.",
     ]);
 
         return back()->with('success', 'Peminjaman berhasil ditolak');

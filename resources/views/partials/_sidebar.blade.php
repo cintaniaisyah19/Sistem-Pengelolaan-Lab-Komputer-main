@@ -89,7 +89,7 @@
       </a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" href="{{ route('user.sop') }}">
+      <a class="nav-link" href="{{ route('user.sop.index') }}">
         <i class="menu-icon typcn typcn-document-text"></i>
         <span class="menu-title">SOP Laboratorium</span>
       </a>

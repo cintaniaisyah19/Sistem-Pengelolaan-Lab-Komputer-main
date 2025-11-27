@@ -129,18 +129,7 @@ Route::get('/peminjaman/bukti/{id}', [PeminjamanController::class, 'bukti'])
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.user')->middleware('auth');
 
     // SOP & Profil
-    Route::get('/sop', [SopController::class, 'indexForUser'])->name('user.sop.index');
-        Route::get('/sop/create', [SopController::class, 'create'])->name('staf.sop.create'); // ← tambahkan ini
-    Route::post('/sop/store', [SopController::class, 'store'])->name('staf.sop.store');   // optional kalau pakai form store
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    // ← Tambahkan edit & update
-    Route::get('/sop/{id}/edit', [SopController::class, 'edit'])->name('staf.sop.edit');
-    Route::put('/sop/{id}', [SopController::class, 'update'])->name('staf.sop.update');
-
-        // ← Tambahkan ini untuk delete
-    Route::delete('/sop/{id}', [SopController::class, 'destroy'])->name('staf.sop.destroy');
+        Route::get('/sop', [SopController::class, 'indexForUser'])->name('user.sop.index');
 
     // ================== PEMINJAMAN ALAT OLEH USER ==================
     Route::get('/peminjaman/alat', [UserPeminjamanController::class, 'index'])
@@ -189,8 +178,15 @@ Route::prefix('staf')->name('staf.')->middleware(['auth', 'staf'])->group(functi
     Route::get('/laporan/peminjaman', [StafController::class, 'laporanPeminjaman'])->name('laporan.peminjaman');
 
     // SOP Management
- // SOP Management
-Route::get('/sop', [SopController::class, 'index'])->name('sop.index');
+    // ================= SOP MANAGEMENT =================
+    Route::get('sop', [SopController::class, 'index'])->name('sop.index');           // staf.sop.index
+    Route::get('sop/create', [SopController::class, 'create'])->name('sop.create');   // staf.sop.create
+    Route::post('sop', [SopController::class, 'store'])->name('sop.store');          // staf.sop.store
+    Route::get('sop/download/{document}', [SopController::class, 'download'])->name('staf.sop.download'); // staf.sop.download
+    Route::get('sop/{id}/edit', [SopController::class, 'edit'])->name('sop.edit');    // staf.sop.edit
+    Route::put('sop/{id}', [SopController::class, 'update'])->name('sop.update');    // staf.sop.update
+    Route::delete('sop/{id}', [SopController::class, 'destroy'])->name('sop.destroy'); // staf.sop.destroy
+
 
     // ================= LABORATORIUM UNTUK STAF =================
         Route::prefix('laboratorium')->name('laboratorium.')->group(function () {
